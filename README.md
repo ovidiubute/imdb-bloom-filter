@@ -1,43 +1,61 @@
-# IMDB Bloom Filter
+# 🎬 IMDB Bloom Filter
 
-A memory-efficient Bloom filter CLI tool for validating IMDB title IDs (`tt0000001`, etc.).
+> A lightning-fast, memory-efficient Bloom filter CLI for validating IMDB title IDs
 
-Given a 1GB TSV file of IMDB data, this tool builds a compact Bloom filter (~18MB for 10M IDs at 0.1% false positive rate) that can instantly tell you if an ID is **definitely invalid** or **probably valid**.
+Turn a 1GB TSV file into an ~18MB Bloom filter that instantly tells you if an ID like `tt0000001` is **definitely fake** or **probably real** ⚡
 
-## Installation
+## ✨ Features
+
+- 🚀 **Fast** — O(k) lookups, ~10 hash checks per query
+- 💾 **Tiny** — ~1.8 bytes per ID (vs ~10 bytes raw)
+- 🎯 **Accurate** — Zero false negatives guaranteed
+- 📦 **Portable** — Single JSON file, easy to upload to S3
+- 🔄 **Daily rebuilds** — Timestamped outputs, versioned filters
+
+## 🚀 Quick Start
 
 ```bash
+# Clone and setup
 git clone git@github-personal.com:ovidiubute/imdb-bloom-filter.git
 cd imdb-bloom-filter
 npm install
 npm run build
+
+# Build your filter
+node dist/cli.js build --input title.basics.tsv
+
+# Query an ID
+node dist/cli.js query --id tt0000001
+# → tt0000001: VALID (probably) ✅
 ```
 
-## Building the Filter
+## 🛠️ Building the Filter
 
 ```bash
 node dist/cli.js build --input path/to/title.basics.tsv --output-dir ./output
 ```
 
 **Options:**
-- `--input, -i` — Path to IMDB TSV file (required)
-- `--output-dir, -o` — Output directory (default: `./output`)
-- `--error-rate, -e` — Target false positive rate (default: `0.001` = 0.1%)
+| Flag | Description | Default |
+|------|-------------|---------|
+| `-i, --input` | Path to IMDB TSV file | **required** |
+| `-o, --output-dir` | Where to save the filter | `./output` |
+| `-e, --error-rate` | Target false positive rate | `0.001` (0.1%) |
 
 **Example:**
 ```bash
 node dist/cli.js build --input ~/Downloads/title.basics.tsv --output-dir ./filters
 ```
 
-**Output files:**
-- `bloom-filter-20260517T1300Z.json` — The serialized Bloom filter
-- `manifest-20260517T1300Z.json` — Metadata including item count, error rate, and build timestamp
+**Output files:** 📁
+- `bloom-filter-20260517T1300Z.json` — The serialized filter (~18MB)
+- `manifest-20260517T1300Z.json` — Metadata (count, error rate, timestamp)
 
-The build process uses two passes:
-1. **Count pass** — Streams the file to count total IDs (shows byte progress)
-2. **Populate pass** — Builds the filter (shows row progress with ETA)
+The build runs in two passes with progress bars:
+1. 📊 **Count pass** — Streams file to count total IDs
+2. 🔨 **Populate pass** — Builds the filter with ETA
 
-## Querying
+## 🔍 Querying
 
 ### Single ID
 
@@ -49,25 +67,24 @@ node dist/cli.js query --id tt0000001
 ```
 Using filter: output/bloom-filter-20260517T1300Z.json
 
-tt0000001: VALID (probably)
+tt0000001: VALID (probably) ✅
 ```
 
-Or for an invalid ID:
+Invalid ID:
 ```
-tt9999999: INVALID (definitely)
+tt9999999: INVALID (definitely) ❌
 ```
 
-### Batch Query
+### Batch Query 📋
 
-Create a file with one ID per line:
+Create `ids.txt`:
 ```
-# ids.txt
 tt0000001
 tt0000002
 fake123
 ```
 
-Then run:
+Run:
 ```bash
 node dist/cli.js query --batch ids.txt
 ```
@@ -76,61 +93,69 @@ node dist/cli.js query --batch ids.txt
 ```
 Using filter: output/bloom-filter-20260517T1300Z.json
 
-tt0000001: VALID (probably)
-tt0000002: VALID (probably)
-fake123: INVALID (definitely)
+tt0000001: VALID (probably) ✅
+tt0000002: VALID (probably) ✅
+fake123: INVALID (definitely) ❌
 
 --- Summary ---
 Total checked: 3
-Valid: 2
-Invalid: 1
+Valid: 2 ✅
+Invalid: 1 ❌
 ```
 
-### Auto-discovery
+### Auto-discovery 🔮
 
-If you don't specify `--output-dir`, the query command automatically finds the latest filter in `./output`.
+Query automatically finds the latest filter in `./output`. No filter? It'll tell you to run `build` first!
 
-If no filter exists, it prompts you to run `build` first.
+## 🧮 How It Works
 
-## How It Works
+A Bloom filter is a probabilistic data structure that trades a tiny error rate for massive space savings:
 
-A Bloom filter is a probabilistic data structure that:
-- Uses minimal memory (~1.8 bytes per item at 0.1% FPR)
-- Has **zero false negatives** (genuine IDs are never rejected)
-- Has a configurable false positive rate (invalid IDs that pass through)
+- ✅ **Zero false negatives** — Real IDs are never rejected
+- ⚠️ **Configurable false positives** — Fake IDs that slip through
+- 💾 **Minimal memory** — ~1.8 bytes per item
 
-For 10 million IMDB IDs:
+### Size vs Accuracy
+
+For ~10 million IMDB IDs:
+
 | False Positive Rate | Filter Size | Hash Functions |
-|-------------------|-------------|----------------|
+|:-------------------:|:-----------:|:--------------:|
 | 1% | ~12 MB | 7 |
-| 0.1% | ~18 MB | 10 |
+| **0.1%** ⭐ | **~18 MB** | **10** |
 | 0.01% | ~24 MB | 14 |
 
-## Daily Rebuilds
+## 🔄 Daily Rebuilds
 
-The tool is designed for daily rebuilds. Each build creates timestamped files, so you can:
-- Keep multiple versions
-- Upload to S3 for distribution
-- Roll back if needed
+Perfect for CI/CD! Each build creates timestamped files:
 
-Example cron job:
 ```bash
 # Rebuild daily at 3 AM
-0 3 * * * cd /path/to/imdb-bloom-filter && node dist/cli.js build --input /data/title.basics.tsv
+crontab -e
+# Add: 0 3 * * * cd /path/to/imdb-bloom-filter && node dist/cli.js build --input /data/title.basics.tsv
 ```
 
-## Testing
+**What you get:**
+- 📦 Versioned filters (keep multiple)
+- ☁️ Easy S3 upload for distribution
+- ⏪ Simple rollback if needed
+
+## 🧪 Testing
 
 ```bash
 npm test
 ```
 
 Tests cover:
-- Bloom filter correctness (add/test/serialize)
-- Zero false negatives guarantee
-- Query functionality (single ID, batch, auto-discovery)
-- Manifest generation
+- ✅ Bloom filter correctness (add/test/serialize)
+- ✅ Zero false negatives guarantee
+- ✅ Query functionality (single, batch, auto-discovery)
+- ✅ Manifest generation
 
-## License
+## 📄 License
 
 The Bloom filter implementation is adapted from [jasondavies/bloomfilter.js](https://github.com/jasondavies/bloomfilter.js) (BSD-3-Clause).
+
+---
+
+<p align="center">Made with ❤️ for fast IMDB ID validation</p>
