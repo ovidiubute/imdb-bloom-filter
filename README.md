@@ -16,7 +16,7 @@ Turn a 1GB TSV file into an ~18MB Bloom filter that instantly tells you if an ID
 
 ```bash
 # Clone and setup
-git clone git@github-personal.com:ovidiubute/imdb-bloom-filter.git
+git clone https://github.com/ovidiubute/imdb-bloom-filter.git
 cd imdb-bloom-filter
 npm install
 npm run build
