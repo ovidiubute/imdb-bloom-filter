@@ -119,6 +119,18 @@ Example cron job:
 0 3 * * * cd /path/to/imdb-bloom-filter && node dist/cli.js build --input /data/title.basics.tsv
 ```
 
+## Testing
+
+```bash
+npm test
+```
+
+Tests cover:
+- Bloom filter correctness (add/test/serialize)
+- Zero false negatives guarantee
+- Query functionality (single ID, batch, auto-discovery)
+- Manifest generation
+
 ## License
 
 The Bloom filter implementation is adapted from [jasondavies/bloomfilter.js](https://github.com/jasondavies/bloomfilter.js) (BSD-3-Clause).
